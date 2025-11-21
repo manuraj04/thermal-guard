@@ -1,0 +1,7 @@
+{
+  "name": "Thermal Guard",
+  "description": "A thermal safety assistant app to detect overheating electrical panels.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
