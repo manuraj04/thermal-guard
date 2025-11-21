@@ -5,15 +5,15 @@ import {
   AlertCircle, Search, Zap, CheckCircle2, AlertTriangle, 
   Plus, ChevronDown, ChevronUp, MapPin, FileText, X, Aperture 
 } from 'lucide-react';
-import Navbar from './src/components/Navbar';
-import Card from './src/components/ui/Card';
-import Button from './src/components/ui/Button';
-import Badge from './src/components/ui/Badge';
-import Modal from './src/components/ui/Modal';
-import Input from './src/components/ui/Input';
-import Select from './src/components/ui/Select';
-import Textarea from './src/components/ui/Textarea';
-import { AnalysisResult, RiskLevel, HistoryItem } from './src/types';
+import Navbar from './components/Navbar';
+import Card from './components/ui/Card';
+import Button from './components/ui/Button';
+import Badge from './components/ui/Badge';
+import Modal from './components/ui/Modal';
+import Input from './components/ui/Input';
+import Select from './components/ui/Select';
+import Textarea from './components/ui/Textarea';
+import { AnalysisResult, RiskLevel, HistoryItem } from './types';
 
 const App: React.FC = () => {
   // --- Main App State ---
@@ -150,68 +150,42 @@ const App: React.FC = () => {
     fileInputRef.current?.click();
   };
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = () => {
     if (!selectedImage) return;
 
     setIsAnalyzing(true);
 
-    try {
-      // Get API base URL from environment variable
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    setTimeout(() => {
+      const randomRisk = Math.random();
+      let risk = RiskLevel.LOW;
+      let temp = 45;
+      let suggestion = "All readings normal. Routine check recommended.";
       
-      // Send POST request to backend
-      const response = await fetch(`${apiBaseUrl}/analyze_image`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          image_base64: selectedImage
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      if (randomRisk > 0.7) {
+        risk = RiskLevel.HIGH;
+        temp = 85 + Math.floor(Math.random() * 20);
+        suggestion = "Immediate inspection required. Check breaker #2 and neutral busbar for loose connections.";
+      } else if (randomRisk > 0.4) {
+        risk = RiskLevel.MEDIUM;
+        temp = 60 + Math.floor(Math.random() * 15);
+        suggestion = "Monitor closely. Potential resistive heating detected at connection point.";
       }
 
-      // Parse JSON response from backend
-      const data = await response.json();
-      
-      // Map backend risk level (uppercase) to our RiskLevel enum
-      const riskMapping: { [key: string]: RiskLevel } = {
-        'LOW': RiskLevel.LOW,
-        'MEDIUM': RiskLevel.MEDIUM,
-        'HIGH': RiskLevel.HIGH
-      };
-      
-      const risk = riskMapping[data.risk] || RiskLevel.LOW;
-
-      // Build new AnalysisResult object
       const newResult: AnalysisResult = {
         id: crypto.randomUUID(),
         timestamp: new Date().toISOString(),
         risk,
-        suggestion: data.suggested_action,
-        likelyCause: data.likely_cause,
-        failureProbability: data.confidence,
-        probabilities: data.probabilities,
+        estimatedTemperature: temp,
+        hotspotRegion: "Main Breaker / Busbar B",
         imageUrl: selectedImage,
-        // Estimate temperature based on risk level if not provided by backend
-        estimatedTemperature: risk === RiskLevel.HIGH ? 85 : risk === RiskLevel.MEDIUM ? 65 : 45,
-        hotspotRegion: "Detected Area", // Backend doesn't provide this yet
-        panelName: `Panel ${Math.floor(Math.random() * 100) + 10}` // Generate panel name
+        suggestion,
+        panelName: `Panel ${Math.floor(Math.random() * 100) + 10}`
       };
 
-      // Update state
       setResult(newResult);
       setHistory(prev => [newResult, ...prev].slice(0, 20)); // Keep last 20
-
-    } catch (error) {
-      console.error('Error analyzing image:', error);
-      alert(`Failed to analyze image: ${error instanceof Error ? error.message : 'Unknown error'}. Please ensure the backend is running.`);
-    } finally {
       setIsAnalyzing(false);
-    }
+    }, 1500);
   };
 
   // --- Handlers: Manual Record ---
@@ -395,15 +369,6 @@ const App: React.FC = () => {
                     <Badge risk={result.risk} />
                   </div>
                 </div>
-                {result.failureProbability !== undefined && (
-                  <div className="flex items-center justify-between p-3 bg-dark-800 rounded-lg border border-dark-border">
-                    <span className="text-sm text-gray-400">Confidence</span>
-                    <div className="flex items-center gap-2 text-white font-mono font-medium">
-                      <Activity className="w-4 h-4 text-gray-500" />
-                      {result.failureProbability.toFixed(1)}%
-                    </div>
-                  </div>
-                )}
                 <div className="flex items-center justify-between p-3 bg-dark-800 rounded-lg border border-dark-border">
                   <span className="text-sm text-gray-400">Est. Temperature</span>
                   <div className="flex items-center gap-2 text-white font-mono font-medium">
@@ -419,25 +384,13 @@ const App: React.FC = () => {
                   Analyzed on {formatDate(result.timestamp)}
                 </div>
               </div>
-              <div className="space-y-4">
-                {result.likelyCause && (
-                  <div className="bg-yellow-600/5 border border-yellow-500/20 rounded-lg p-4">
-                    <h4 className="text-yellow-500 text-sm font-semibold uppercase tracking-wider mb-2 flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4" /> Likely Cause
-                    </h4>
-                    <p className="text-gray-300 text-sm leading-relaxed">
-                      {result.likelyCause}
-                    </p>
-                  </div>
-                )}
-                <div className="bg-brand-600/5 border border-brand-500/20 rounded-lg p-4">
-                  <h4 className="text-brand-500 text-sm font-semibold uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <Zap className="w-4 h-4" /> Suggested Actions
-                  </h4>
-                  <p className="text-gray-300 text-sm leading-relaxed">
-                    {result.suggestion}
-                  </p>
-                </div>
+              <div className="bg-brand-600/5 border border-brand-500/20 rounded-lg p-4">
+                <h4 className="text-brand-500 text-sm font-semibold uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <Zap className="w-4 h-4" /> Suggested Actions
+                </h4>
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  {result.suggestion}
+                </p>
               </div>
             </div>
           )}

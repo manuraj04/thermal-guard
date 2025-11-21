@@ -14,6 +14,10 @@ export interface AnalysisResult {
   suggestion?: string;
   imageUrl?: string | null;
   panelName?: string;
+  // Backend response fields
+  failureProbability?: number; // Confidence score from backend (0-100)
+  likelyCause?: string; // From backend's likely_cause
+  probabilities?: { [key: string]: number }; // Probabilities for each class
   // Manual entry fields
   location?: string;
   notes?: string;
