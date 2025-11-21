@@ -12,10 +12,16 @@ from pydantic import BaseModel, Field
 import uvicorn
 
 # TensorFlow/Keras imports
+tf = None
+keras = None
 try:
+    import tensorflow as tf
     from tensorflow import keras
+    print("✓ TensorFlow/Keras loaded successfully")
 except ImportError:
-    import keras
+    print("⚠️  WARNING: TensorFlow not available.")
+    print("   Install TensorFlow with: pip install tensorflow")
+    print("   For Python 3.14, TensorFlow is not yet available. Please use Python 3.11 or 3.12.")
 
 from utils import decode_base64_image, preprocess_image, convert_to_pil
 
@@ -37,26 +43,38 @@ app.add_middleware(
 )
 
 # Model configuration
-MODEL_PATH = Path(__file__).parent / "models" / "thermal_mobilenet_model.h5"
+MODEL_PATH = Path(__file__).parent / "models" / "mobilenet_thermal_model.tflite"
 CLASSES = ["LOW", "MEDIUM", "HIGH"]
 IMAGE_SIZE = (224, 224)
 
-# Global model variable
-model = None
+# Global model variable (TFLite interpreter)
+interpreter = None
 
 
 def load_model():
-    """Load the MobileNet model from disk"""
-    global model
-    if model is None:
+    """Load the TFLite MobileNet model from disk"""
+    global interpreter
+    
+    # Check if TensorFlow is available
+    if tf is None:
+        raise RuntimeError(
+            "TensorFlow is not available. "
+            "Cannot load model without TensorFlow installed."
+        )
+    
+    if interpreter is None:
         if not MODEL_PATH.exists():
             raise FileNotFoundError(
                 f"Model file not found at {MODEL_PATH}. "
-                "Please ensure thermal_mobilenet_model.h5 is in the models directory."
+                "Please ensure mobilenet_thermal_model.tflite is in the models directory."
             )
-        model = keras.models.load_model(str(MODEL_PATH))
-        print(f"✓ Model loaded successfully from {MODEL_PATH}")
-    return model
+        
+        # Load TFLite model and allocate tensors
+        interpreter = tf.lite.Interpreter(model_path=str(MODEL_PATH))
+        interpreter.allocate_tensors()
+        print(f"✓ TFLite model loaded successfully from {MODEL_PATH}")
+    
+    return interpreter
 
 
 def map_to_cause_action(risk: str) -> tuple[str, str]:
@@ -106,7 +124,7 @@ async def startup_event():
     """Load model on application startup"""
     try:
         load_model()
-    except FileNotFoundError as e:
+    except (FileNotFoundError, OSError, RuntimeError) as e:
         print(f"⚠ Warning: {e}")
         print("The API will start but /analyze_image endpoint will fail until model is available.")
 
@@ -117,7 +135,8 @@ async def root():
     return {
         "service": "Thermal Guard API",
         "status": "running",
-        "model_loaded": model is not None,
+        "model_loaded": interpreter is not None,
+        "model_type": "TFLite",
         "version": "1.0.0"
     }
 
@@ -127,7 +146,8 @@ async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
-        "model_status": "loaded" if model is not None else "not_loaded"
+        "model_status": "loaded" if interpreter is not None else "not_loaded",
+        "model_type": "TFLite"
     }
 
 
@@ -144,7 +164,7 @@ async def analyze_image(request: ImageAnalysisRequest) -> ImageAnalysisResponse:
     """
     try:
         # Ensure model is loaded
-        current_model = load_model()
+        current_interpreter = load_model()
         
         # Decode and convert image
         image = convert_to_pil(request.image_base64)
@@ -152,8 +172,18 @@ async def analyze_image(request: ImageAnalysisRequest) -> ImageAnalysisResponse:
         # Preprocess image for model
         processed_image = preprocess_image(image, target_size=IMAGE_SIZE)
         
-        # Run prediction
-        predictions = current_model.predict(processed_image, verbose=0)
+        # Get input and output details
+        input_details = current_interpreter.get_input_details()
+        output_details = current_interpreter.get_output_details()
+        
+        # Set the input tensor
+        current_interpreter.set_tensor(input_details[0]['index'], processed_image)
+        
+        # Run inference
+        current_interpreter.invoke()
+        
+        # Get the output tensor
+        predictions = current_interpreter.get_tensor(output_details[0]['index'])
         
         # Get probabilities for each class
         probabilities_array = predictions[0]

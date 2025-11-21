@@ -29,7 +29,7 @@ FastAPI backend for analyzing thermal images using MobileNet deep learning model
    ```
 
 4. **Place your model file**:
-   - Ensure `thermal_mobilenet_model.h5` is in the `models/` directory
+   - Ensure `mobilenet_thermal_model.tflite` is in the `models/` directory
 
 ## Running the Server
 
@@ -97,6 +97,7 @@ Alternative API documentation (ReDoc)
 
 - **FastAPI**: Modern, fast web framework
 - **TensorFlow/Keras**: Deep learning model inference
+- **TensorFlow Lite**: Lightweight model format for efficient inference
 - **MobileNet**: Lightweight CNN architecture (224x224 input)
 - **PIL/Pillow**: Image processing
 - **NumPy**: Array operations
@@ -109,7 +110,7 @@ backend/
 ├── utils.py             # Image processing utilities
 ├── requirements.txt     # Python dependencies
 ├── models/
-│   └── thermal_mobilenet_model.h5  # Pre-trained model
+│   └── mobilenet_thermal_model.tflite  # TFLite model
 └── README.md           # This file
 ```
 

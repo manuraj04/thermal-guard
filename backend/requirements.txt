@@ -4,12 +4,16 @@ uvicorn[standard]>=0.24.0
 pydantic>=2.5.0
 
 # Machine Learning
-tensorflow>=2.13.0
-# Alternative: tensorflow-cpu>=2.13.0  # Use this for CPU-only installations
+# NOTE: TensorFlow is not yet available for Python 3.14
+# Please use Python 3.11 or 3.12 for TensorFlow support
+# tensorflow>=2.13.0
+# OR install manually with: pip install tensorflow (for compatible Python versions)
+# For Python 3.14, you may need to use Keras 3 standalone:
+keras>=3.0.0
 
 # Image Processing
 Pillow>=10.0.0
-numpy>=1.24.0,<2.0.0
+numpy>=2.0.0
 
 # CORS support
 python-multipart>=0.0.6

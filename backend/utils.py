@@ -1,77 +1,72 @@
 """
-Utility functions for image processing and preprocessing
+Utility functions for image decoding and preprocessing for TFLite MobileNet
 """
+
 import base64
 import re
 from io import BytesIO
-from typing import Any
+from typing import Tuple
 import numpy as np
+from PIL import Image
 
 
-def decode_base64_image(image_data: str) -> Any:
+def decode_base64_image(image_data: str) -> Image.Image:
     """
-    Decode base64 string or data URL to PIL Image
-    
+    Decode base64 string or data URL to PIL Image.
+
     Args:
-        image_data: Base64 string or data URL (e.g., "data:image/png;base64,...")
-    
+        image_data (str): Base64 string or data URL like "data:image/jpeg;base64,..."
+
     Returns:
-        PIL Image object
+        PIL.Image object in RGB mode
     """
-    from PIL import Image
-    # Check if it's a data URL and extract the base64 part
-    if image_data.startswith('data:'):
-        # Match pattern: data:image/[type];base64,[base64string]
-        match = re.match(r'data:image/\w+;base64,(.+)', image_data)
+    # If it's a data URL, remove the header
+    if image_data.startswith("data:"):
+        match = re.match(r"data:image\/\w+;base64,(.+)", image_data)
         if match:
             image_data = match.group(1)
-    
-    # Decode base64 string
+
+    # Decode base64 → raw bytes
     image_bytes = base64.b64decode(image_data)
-    
+
     # Convert to PIL Image
-    image = Image.open(BytesIO(image_bytes))
-    
+    image = Image.open(BytesIO(image_bytes)).convert("RGB")
     return image
 
-def preprocess_image(image: Any, target_size: tuple = (224, 224)) -> np.ndarray:
+
+def convert_to_pil(image_data: str) -> Image.Image:
     """
-    Preprocess PIL Image for MobileNet model input
-    
-    Args:
-        image: PIL Image object
-        target_size: Target size for the model (width, height)
-    
-    Returns:
-        Preprocessed numpy array ready for model prediction
-    """
-    from PIL import Image
-    # Convert to RGB if necessary (in case of RGBA or grayscale)
-    if image.mode != 'RGB':
-        image = image.convert('RGB')
-    
-    # Resize to target size
-    image = image.resize(target_size, Image.Resampling.LANCZOS)
-    
-    # Convert to numpy array
-    img_array = np.array(image, dtype=np.float32)
-    
-    # Normalize pixel values to [0, 1] range (MobileNet preprocessing)
-    img_array = img_array / 255.0
-    
-    # Add batch dimension
-    img_array = np.expand_dims(img_array, axis=0)
-    
-    return img_array
-    return img_array
-def convert_to_pil(image_data: str) -> Any:
-    """
-    Convenience function to convert base64/data URL directly to PIL Image
-    
-    Args:
-        image_data: Base64 string or data URL
-    
-    Returns:
-        PIL Image object
+    Alias for decode_base64_image for easier use in main.py
     """
     return decode_base64_image(image_data)
+
+
+def preprocess_image(
+    image: Image.Image,
+    target_size: Tuple[int, int] = (224, 224),
+    normalize: bool = True
+) -> np.ndarray:
+    """
+    Preprocess a PIL Image for TFLite MobileNet.
+
+    Args:
+        image: PIL.Image in RGB
+        target_size: (width, height)
+        normalize: If True → float32 normalized [0,1]
+
+    Returns:
+        NumPy array of shape (1, H, W, 3)
+    """
+    if image.mode != "RGB":
+        image = image.convert("RGB")
+
+    # Resize using high-quality resampling
+    image = image.resize(target_size, Image.Resampling.LANCZOS)
+
+    arr = np.asarray(image).astype("float32")
+
+    if normalize:
+        arr = arr / 255.0  # float32 normalized
+
+    arr = np.expand_dims(arr, axis=0)  # shape: (1, H, W, 3)
+    return arr
