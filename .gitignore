@@ -22,3 +22,18 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+.venv-old/
+venv/
+ENV/
+env/
+
+# Keep the model file - it's needed for deployment!
+# !backend/models/*.tflite

@@ -4,21 +4,25 @@
 
 # Thermal Guard - Fire Risk Detection System
 
-AI-powered thermal image analysis for fire risk detection using React + FastAPI + TensorFlow.
+AI-powered thermal image analysis for fire risk detection using React + FastAPI + TensorFlow Lite.
 
 View your app in AI Studio: https://ai.studio/apps/drive/1yVvN6JW89AMXDEp1wSqb6hrjtMC5m6wE
 
+[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/manuraj04/thermal-guard)
+[![Deploy to Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/manuraj04/thermal-guard)
+
 ## 🏗️ Architecture
 
-- **Frontend**: React + TypeScript + Vite + Tailwind CSS
-- **Backend**: FastAPI + TensorFlow/Keras + MobileNet
-- **Model**: Thermal image classification (LOW/MEDIUM/HIGH risk)
+- **Frontend**: React 19 + TypeScript 5.8 + Vite 6 + Tailwind CSS (CDN)
+- **Backend**: FastAPI 0.121 + TensorFlow 2.20 + TFLite Interpreter
+- **Model**: MobileNet TFLite (224x224 input, 3 classes: LOW/MEDIUM/HIGH risk)
+- **Deployment**: Vercel (Frontend) + Railway/Render (Backend) or Docker
 
 ## 🚀 Run Locally
 
 ### Prerequisites
-- Node.js (v16+)
-- Python (v3.8+)
+- Node.js 18+ or 20+
+- Python 3.12.10 (⚠️ Not 3.14 - TensorFlow not yet compatible)
 - pip
 
 ### 1. Frontend Setup
@@ -30,7 +34,6 @@ View your app in AI Studio: https://ai.studio/apps/drive/1yVvN6JW89AMXDEp1wSqb6h
 
 2. Configure environment variables in `.env.local`:
    ```bash
-   GEMINI_API_KEY=your_gemini_api_key
    VITE_API_BASE_URL=http://localhost:8000
    ```
 
@@ -50,25 +53,26 @@ View your app in AI Studio: https://ai.studio/apps/drive/1yVvN6JW89AMXDEp1wSqb6h
 
 2. Create a virtual environment (recommended):
    ```bash
-   python -m venv venv
+   python -m venv .venv
    ```
 
 3. Activate the virtual environment:
-   - **Windows (PowerShell)**: `.\venv\Scripts\Activate.ps1`
-   - **Windows (CMD)**: `.\venv\Scripts\activate.bat`
-   - **Linux/Mac**: `source venv/bin/activate`
+   - **Windows (PowerShell)**: `.\.venv\Scripts\Activate.ps1`
+   - **Windows (CMD)**: `.\.venv\Scripts\activate.bat`
+   - **Linux/Mac**: `source .venv/bin/activate`
 
 4. Install Python dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
-5. Place your trained model file:
-   - Add `thermal_mobilenet_model.h5` to `backend/models/`
+5. Ensure model file exists:
+   - Model file: `backend/models/mobilenet_thermal_model.tflite` (should already be present)
 
 6. Run the backend server:
    ```bash
-   python main.py
+   cd ..
+   python backend/main.py
    ```
    
    The API will be available at `http://localhost:8000`
@@ -87,15 +91,53 @@ thermal-guard/
 │   ├── types.ts                 # TypeScript types
 │   └── vite-env.d.ts           # Vite env types
 ├── backend/                     # Backend API
-│   ├── main.py                  # FastAPI application
+│   ├── main.py                  # FastAPI application with TFLite
 │   ├── utils.py                 # Image processing utilities
 │   ├── requirements.txt         # Python dependencies
+│   ├── Procfile                # Railway/Heroku deployment
 │   └── models/                  # ML models
-│       └── thermal_mobilenet_model.h5
+│       └── mobilenet_thermal_model.tflite
 ├── package.json
 ├── vite.config.ts
+├── vercel.json                 # Vercel deployment config
+├── railway.json                # Railway deployment config
+├── render.yaml                 # Render deployment config
+├── docker-compose.yml          # Docker orchestration
+├── Dockerfile.backend          # Backend container
+├── Dockerfile.frontend         # Frontend container
+├── DEPLOYMENT.md               # Detailed deployment guide
+├── DEPLOYMENT_CHECKLIST.md     # Step-by-step checklist
+├── deploy.ps1                  # Windows deployment script
 └── README.md
 ```
+
+## 🚀 Deployment
+
+### Quick Deploy (Recommended)
+
+**Option 1: One-Click Deploy**
+- [![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/manuraj04/thermal-guard) for frontend
+- [![Deploy to Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/manuraj04/thermal-guard) for backend
+
+**Option 2: Automated Script (Windows)**
+```powershell
+.\deploy.ps1
+```
+
+**Option 3: Docker**
+```bash
+docker-compose up --build
+```
+
+For detailed deployment instructions, see **[DEPLOYMENT.md](./DEPLOYMENT.md)**
+
+### Deployment Platforms Supported
+- ✅ **Vercel** (Frontend) - Recommended, free tier
+- ✅ **Railway** (Backend) - Recommended, easy Python deployment
+- ✅ **Render** (Full Stack) - Single platform solution
+- ✅ **Netlify** (Frontend) - Alternative to Vercel
+- ✅ **Docker** (Self-hosted) - Full control
+- ✅ **AWS/GCP/Azure** (Enterprise) - Scalable production
 
 ## 🔌 API Integration
 
